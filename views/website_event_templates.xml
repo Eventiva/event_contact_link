@@ -2,72 +2,25 @@
 <odoo>
     <data>
         <!-- Enhanced Event Registration Page Template -->
-        <record id="view_event_registration_page_enhanced" model="ir.ui.view">
-            <field name="name">event.registration.page.enhanced</field>
-            <field name="model">event.event</field>
-            <field name="inherit_id" ref="website_event.event_details" />
-            <field name="arch" type="xml">
-                <!-- Enhanced participation badge -->
-                <xpath expr="//span[@t-if='event.is_participating']" position="replace">
-                    <span t-if="event.is_participating or event.is_participating_enhanced"
-                        class="badge text-bg-success o_wevent_badge">
-                        <i class="fa fa-check me-2" role="img" />
-                        <span t-if="event.is_participating_enhanced and not event.is_participating">
-                            Registered</span>
-                        <span t-else="">Registered</span>
-                    </span>
-                </xpath>
-
-                <!-- Enhanced participation in mobile view -->
-                <xpath expr="//small[@t-if='event.is_participating']" position="replace">
-                    <small t-if="event.is_participating or event.is_participating_enhanced"
-                        class="o_wevent_participating position-absolute bottom-0 px-3 py-2 w-100 text-bg-success">
-                        <i class="fa fa-check me-2" />
-                        <span t-if="event.is_participating_enhanced and not event.is_participating">
-                            Registered</span>
-                        <span t-else="">Registered</span>
-                    </small>
-                </xpath>
-            </field>
-        </record>
+        <template id="event_description_enhanced" inherit_id="website_event.event_description_full"
+            name="Event Description Enhanced">
+            <!-- Enhanced participation badge -->
+            <xpath expr="//span[@t-if='event.is_participating']" position="replace">
+                <span t-if="event.is_participating or event.is_participating_enhanced"
+                    class="badge text-bg-success o_wevent_badge">
+                    <i class="fa fa-check me-2" role="img" />Registered </span>
+            </xpath>
+        </template>
 
         <!-- Enhanced Event List Template -->
-        <record id="view_event_list_enhanced" model="ir.ui.view">
-            <field name="name">event.list.enhanced</field>
-            <field name="model">event.event</field>
-            <field name="inherit_id" ref="website_event.event_list" />
-            <field name="arch" type="xml">
-                <!-- Enhanced participation in list view -->
-                <xpath expr="//small[@t-if='event.is_participating']" position="replace">
-                    <small t-if="event.is_participating or event.is_participating_enhanced"
-                        class="o_wevent_participating position-absolute bottom-0 px-3 py-2 w-100 text-bg-success">
-                        <i class="fa fa-check me-2" />
-                        <span t-if="event.is_participating_enhanced and not event.is_participating">
-                            Registered</span>
-                        <span t-else="">Registered</span>
-                    </small>
-                </xpath>
-            </field>
-        </record>
-
-        <!-- Enhanced Event Details Template -->
-        <record id="view_event_details_enhanced" model="ir.ui.view">
-            <field name="name">event.details.enhanced</field>
-            <field name="model">event.event</field>
-            <field name="inherit_id" ref="website_event.event_details" />
-            <field name="arch" type="xml">
-                <!-- Add enhanced booking information section -->
-                <xpath expr="//div[@id='o_wevent_event_main']" position="inside">
-                    <div t-if="event.is_participating_enhanced and not event.is_participating"
-                        class="alert alert-info mt-3">
-                        <i class="fa fa-info-circle me-2" /> You are registered for this event
-                        through a contact-linked registration. <span
-                            t-if="event.registration_count_enhanced > 1"> You have <strong
-                                t-esc="event.registration_count_enhanced" /> registrations for this
-                        event. </span>
-                    </div>
-                </xpath>
-            </field>
-        </record>
+        <template id="events_list_enhanced" inherit_id="website_event.events_list"
+            name="Events List Enhanced">
+            <!-- Enhanced participation in list view -->
+            <xpath expr="//small[@t-if='event.is_participating']" position="replace">
+                <small t-if="event.is_participating or event.is_participating_enhanced"
+                    class="o_wevent_participating position-absolute bottom-0 px-3 py-2 w-100 text-bg-success">
+                    <i class="fa fa-check me-2" />Registered </small>
+            </xpath>
+        </template>
     </data>
 </odoo>
