@@ -54,34 +54,5 @@
             </field>
         </record>
 
-
-        <!-- Enhanced Event Form View -->
-        <record id="view_event_form_enhanced_booking" model="ir.ui.view">
-            <field name="name">event.event.form.enhanced.booking</field>
-            <field name="model">event.event</field>
-            <field name="inherit_id" ref="event.view_event_form" />
-            <field name="arch" type="xml">
-                <xpath expr="//field[@name='seats_taken']" position="after">
-                    <field name="is_participating_enhanced" string="Is Participating (Enhanced)"
-                        readonly="1" />
-                    <field name="registration_count_enhanced" string="User Registrations"
-                        readonly="1" />
-                </xpath>
-            </field>
-        </record>
-
-        <!-- Enhanced Event Tree View -->
-        <record id="view_event_tree_enhanced_booking" model="ir.ui.view">
-            <field name="name">event.event.tree.enhanced.booking</field>
-            <field name="model">event.event</field>
-            <field name="inherit_id" ref="event.view_event_tree" />
-            <field name="arch" type="xml">
-                <xpath expr="//field[@name='seats_taken']" position="after">
-                    <field name="is_participating_enhanced" string="Enhanced Participation"
-                        readonly="1" />
-                </xpath>
-            </field>
-        </record>
-
     </data>
 </odoo>
