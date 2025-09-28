@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Contact Form View (to show event registrations) -->
+        <record id="view_partner_form_event_registrations" model="ir.ui.view">
+            <field name="name">res.partner.form.event.registrations</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form" />
+            <field name="arch" type="xml">
+                <xpath expr="//notebook" position="inside">
+                    <page string="Event Registrations" name="event_registrations">
+                        <field name="event_registration_ids" readonly="1">
+                            <tree>
+                                <field name="event_id" />
+                                <field name="name" />
+                                <field name="email" />
+                                <field name="phone" />
+                                <field name="state" />
+                                <field name="date_closed" />
+                            </tree>
+                        </field>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+    </data>
+</odoo>

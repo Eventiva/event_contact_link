@@ -197,3 +197,26 @@ class EventRegistration(models.Model):
                 })
                 if contact:
                     self.contact_id = contact
+
+    def _get_booking_status_for_user(self, user_id=None):
+        """Get booking status for a specific user based on contact linking"""
+        if not user_id:
+            user_id = self.env.user.id
+        
+        user = self.env['res.users'].browse(user_id)
+        if not user.exists():
+            return False
+            
+        # Check if this registration is linked to the user's contact
+        if self.contact_id and self.contact_id == user.partner_id:
+            return True
+            
+        # Check if this registration was created by the user
+        if self.partner_id and self.partner_id == user.partner_id:
+            return True
+            
+        # Check if the registration email matches the user's email
+        if self.email and user.email and self.email.lower() == user.email.lower():
+            return True
+            
+        return False

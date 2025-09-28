@@ -82,21 +82,104 @@ class TestEventContactLink(TransactionCase):
             'name': 'Multi User',
             'email': 'multi@example.com',
         })
-
+        
         # Create second event
         event2 = self.env['event.event'].create({
             'name': 'Test Event 2',
             'date_begin': '2024-01-02 09:00:00',
             'date_end': '2024-01-02 17:00:00',
         })
-
+        
         # Create second registration with same email
         registration2 = self.env['event.registration'].create({
             'event_id': event2.id,
             'name': 'Multi User',
             'email': 'multi@example.com',
         })
-
+        
         # Check that both registrations are linked to the same contact
         self.assertEqual(registration1.contact_id, registration2.contact_id)
         self.assertEqual(len(registration1.contact_id.event_registration_ids), 2)
+
+    def test_enhanced_booking_detection(self):
+        """Test enhanced booking detection for contact-linked registrations"""
+        # Create a user
+        user = self.env['res.users'].create({
+            'name': 'Test User',
+            'login': 'testuser@example.com',
+            'email': 'testuser@example.com',
+        })
+        
+        # Create a registration with the user's email (but not directly linked)
+        registration = self.env['event.registration'].create({
+            'event_id': self.event.id,
+            'name': 'Test User',
+            'email': 'testuser@example.com',
+            'state': 'open',
+        })
+        
+        # Check enhanced participation detection
+        self.assertTrue(self.event.is_user_registered_enhanced(user.id))
+        self.assertTrue(self.event.is_participating_enhanced)
+        self.assertEqual(self.event.registration_count_enhanced, 1)
+        
+        # Get user registrations
+        user_registrations = self.event.get_user_registrations_enhanced(user.id)
+        self.assertEqual(len(user_registrations), 1)
+        self.assertEqual(user_registrations[0], registration)
+
+    def test_enhanced_booking_detection_contact_linked(self):
+        """Test enhanced booking detection for contact-linked registrations"""
+        # Create a user
+        user = self.env['res.users'].create({
+            'name': 'Test User 2',
+            'login': 'testuser2@example.com',
+            'email': 'testuser2@example.com',
+        })
+        
+        # Create a registration and link it to the user's contact
+        registration = self.env['event.registration'].create({
+            'event_id': self.event.id,
+            'name': 'Different Name',
+            'email': 'different@example.com',
+            'contact_id': user.partner_id.id,
+            'state': 'open',
+        })
+        
+        # Check enhanced participation detection
+        self.assertTrue(self.event.is_user_registered_enhanced(user.id))
+        self.assertTrue(self.event.is_participating_enhanced)
+        self.assertEqual(self.event.registration_count_enhanced, 1)
+        
+        # Get user registrations
+        user_registrations = self.event.get_user_registrations_enhanced(user.id)
+        self.assertEqual(len(user_registrations), 1)
+        self.assertEqual(user_registrations[0], registration)
+
+    def test_booking_status_for_user(self):
+        """Test the booking status method for individual registrations"""
+        # Create a user
+        user = self.env['res.users'].create({
+            'name': 'Test User 3',
+            'login': 'testuser3@example.com',
+            'email': 'testuser3@example.com',
+        })
+        
+        # Create a registration with the user's email
+        registration = self.env['event.registration'].create({
+            'event_id': self.event.id,
+            'name': 'Test User 3',
+            'email': 'testuser3@example.com',
+            'state': 'open',
+        })
+        
+        # Check booking status
+        self.assertTrue(registration._get_booking_status_for_user(user.id))
+        
+        # Test with different user
+        other_user = self.env['res.users'].create({
+            'name': 'Other User',
+            'login': 'other@example.com',
+            'email': 'other@example.com',
+        })
+        self.assertFalse(registration._get_booking_status_for_user(other_user.id))

@@ -44,25 +44,28 @@
             </field>
         </record>
 
-        <!-- Contact Form View (to show event registrations) -->
-        <record id="view_partner_form_event_registrations" model="ir.ui.view">
-            <field name="name">res.partner.form.event.registrations</field>
-            <field name="model">res.partner</field>
-            <field name="inherit_id" ref="base.view_partner_form" />
+
+        <!-- Enhanced Event Form View -->
+        <record id="view_event_form_enhanced_booking" model="ir.ui.view">
+            <field name="name">event.event.form.enhanced.booking</field>
+            <field name="model">event.event</field>
+            <field name="inherit_id" ref="event.view_event_form" />
             <field name="arch" type="xml">
-                <xpath expr="//notebook" position="inside">
-                    <page string="Event Registrations" name="event_registrations">
-                        <field name="event_registration_ids" readonly="1">
-                            <tree>
-                                <field name="event_id" />
-                                <field name="name" />
-                                <field name="email" />
-                                <field name="phone" />
-                                <field name="state" />
-                                <field name="date_closed" />
-                            </tree>
-                        </field>
-                    </page>
+                <xpath expr="//field[@name='is_participating']" position="after">
+                    <field name="is_participating_enhanced" string="Is Participating (Enhanced)" />
+                    <field name="registration_count_enhanced" string="User Registrations" />
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Enhanced Event Tree View -->
+        <record id="view_event_tree_enhanced_booking" model="ir.ui.view">
+            <field name="name">event.event.tree.enhanced.booking</field>
+            <field name="model">event.event</field>
+            <field name="inherit_id" ref="event.view_event_tree" />
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='is_participating']" position="after">
+                    <field name="is_participating_enhanced" string="Enhanced Participation" />
                 </xpath>
             </field>
         </record>
