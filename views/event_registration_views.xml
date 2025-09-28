@@ -51,9 +51,11 @@
             <field name="model">event.event</field>
             <field name="inherit_id" ref="event.view_event_form" />
             <field name="arch" type="xml">
-                <xpath expr="//field[@name='is_participating']" position="after">
-                    <field name="is_participating_enhanced" string="Is Participating (Enhanced)" />
-                    <field name="registration_count_enhanced" string="User Registrations" />
+                <xpath expr="//field[@name='seats_taken']" position="after">
+                    <field name="is_participating_enhanced" string="Is Participating (Enhanced)"
+                        readonly="1" />
+                    <field name="registration_count_enhanced" string="User Registrations"
+                        readonly="1" />
                 </xpath>
             </field>
         </record>
@@ -64,8 +66,9 @@
             <field name="model">event.event</field>
             <field name="inherit_id" ref="event.view_event_tree" />
             <field name="arch" type="xml">
-                <xpath expr="//field[@name='is_participating']" position="after">
-                    <field name="is_participating_enhanced" string="Enhanced Participation" />
+                <xpath expr="//field[@name='seats_taken']" position="after">
+                    <field name="is_participating_enhanced" string="Enhanced Participation"
+                        readonly="1" />
                 </xpath>
             </field>
         </record>
