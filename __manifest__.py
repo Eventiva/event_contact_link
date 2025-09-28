@@ -17,6 +17,9 @@
         'security/ir.model.access.csv',
         'views/event_registration_views.xml',
     ],
+    'test': [
+        'tests/test_event_contact_link.py',
+    ],
     'installable': True,
     'auto_install': False,
     'application': False,

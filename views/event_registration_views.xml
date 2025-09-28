@@ -30,7 +30,7 @@
         <record id="view_event_registration_search_contact" model="ir.ui.view">
             <field name="name">event.registration.search.contact</field>
             <field name="model">event.registration</field>
-            <field name="inherit_id" ref="event.view_event_registration_search" />
+            <field name="inherit_id" ref="event.view_registration_search" />
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='partner_id']" position="after">
                     <field name="contact_id" string="Contact" />
