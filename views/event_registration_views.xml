@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Event Registration Form View -->
+        <record id="view_event_registration_form_contact" model="ir.ui.view">
+            <field name="name">event.registration.form.contact</field>
+            <field name="model">event.registration</field>
+            <field name="inherit_id" ref="event.view_event_registration_form" />
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='partner_id']" position="after">
+                    <field name="contact_id" widget="many2one_autocomplete"
+                        options="{'no_create': False, 'no_create_edit': False}" />
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Event Registration Tree View -->
+        <record id="view_event_registration_tree_contact" model="ir.ui.view">
+            <field name="name">event.registration.tree.contact</field>
+            <field name="model">event.registration</field>
+            <field name="inherit_id" ref="event.view_event_registration_tree" />
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='partner_id']" position="after">
+                    <field name="contact_id" />
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Event Registration Search View -->
+        <record id="view_event_registration_search_contact" model="ir.ui.view">
+            <field name="name">event.registration.search.contact</field>
+            <field name="model">event.registration</field>
+            <field name="inherit_id" ref="event.view_event_registration_search" />
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='partner_id']" position="after">
+                    <field name="contact_id" string="Contact" />
+                </xpath>
+                <xpath expr="//filter[@name='partner']" position="after">
+                    <filter string="Has Contact" name="has_contact"
+                        domain="[('contact_id', '!=', False)]" />
+                    <filter string="No Contact" name="no_contact"
+                        domain="[('contact_id', '=', False)]" />
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Contact Form View (to show event registrations) -->
+        <record id="view_partner_form_event_registrations" model="ir.ui.view">
+            <field name="name">res.partner.form.event.registrations</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form" />
+            <field name="arch" type="xml">
+                <xpath expr="//notebook" position="inside">
+                    <page string="Event Registrations" name="event_registrations">
+                        <field name="event_registration_ids" readonly="1">
+                            <tree>
+                                <field name="event_id" />
+                                <field name="name" />
+                                <field name="email" />
+                                <field name="phone" />
+                                <field name="state" />
+                                <field name="date_closed" />
+                            </tree>
+                        </field>
+                    </page>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>
