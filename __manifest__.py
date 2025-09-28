@@ -15,6 +15,7 @@
     'depends': ['event', 'base', 'website_event'],
     'data': [
         'security/ir.model.access.csv',
+        'data/ir_actions_server.xml',
         'views/event_registration_views.xml',
         'views/res_partner_views.xml',
         'views/website_event_templates.xml',

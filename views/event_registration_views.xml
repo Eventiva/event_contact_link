@@ -11,6 +11,16 @@
                     <field name="contact_id" widget="many2one_autocomplete"
                         options="{'no_create': False, 'no_create_edit': False}" />
                 </xpath>
+                <xpath expr="//header" position="inside">
+                    <button name="action_find_or_create_contact" string="Find/Create Contact"
+                        type="object" class="btn-primary"
+                        invisible="contact_id"
+                        help="Find existing contact or create new one based on current information" />
+                    <button name="action_link_to_existing_contact" string="Link to Existing Contact"
+                        type="object" class="btn-secondary"
+                        invisible="contact_id"
+                        help="Manually select an existing contact to link" />
+                </xpath>
             </field>
         </record>
 

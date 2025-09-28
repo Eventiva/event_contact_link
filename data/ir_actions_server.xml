@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Server Action to Fix Duplicate Contacts -->
+        <record id="action_fix_duplicate_contacts" model="ir.actions.server">
+            <field name="name">Fix Duplicate Contacts</field>
+            <field name="model_id" ref="event.model_event_registration" />
+            <field name="state">code</field>
+            <field name="code">
+                # Fix duplicate contacts and link registrations properly
+                env['event.registration'].fix_duplicate_contacts()
+            </field>
+        </record>
+    </data>
+</odoo>

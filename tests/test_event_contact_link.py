@@ -74,6 +74,52 @@ class TestEventContactLink(TransactionCase):
         self.assertEqual(registration.name, 'Updated Name')
         self.assertEqual(registration.phone, '+9876543210')
 
+    def test_contact_clearing_on_field_change(self):
+        """Test that contact_id is cleared when relevant fields change"""
+        # Create a registration with contact
+        registration = self.env['event.registration'].create({
+            'event_id': self.event.id,
+            'name': 'Test User',
+            'email': 'test@example.com',
+        })
+
+        # Verify contact was created and linked
+        self.assertTrue(registration.contact_id)
+        original_contact = registration.contact_id
+
+        # Change the email - this should clear the contact_id
+        registration.email = 'newemail@example.com'
+        registration._onchange_contact_fields()
+
+        # Contact should be cleared to allow re-evaluation on save
+        self.assertFalse(registration.contact_id)
+
+        # Save the record - this should create/find a new contact
+        registration.write({'email': 'newemail@example.com'})
+
+        # Should have a contact (might be same or different)
+        self.assertTrue(registration.contact_id)
+
+    def test_manual_contact_finding(self):
+        """Test the manual contact finding action"""
+        # Create a registration without contact
+        registration = self.env['event.registration'].create({
+            'event_id': self.event.id,
+            'name': 'Manual Test User',
+            'email': 'manual@example.com',
+        })
+
+        # Clear contact_id to simulate manual finding
+        registration.contact_id = False
+
+        # Test manual contact finding
+        result = registration.action_find_or_create_contact()
+
+        # Should have found/created a contact
+        self.assertTrue(registration.contact_id)
+        self.assertEqual(registration.contact_id.name, 'Manual Test User')
+        self.assertEqual(registration.contact_id.email, 'manual@example.com')
+
     def test_multiple_registrations_same_contact(self):
         """Test that multiple registrations can be linked to the same contact"""
         # Create first registration
@@ -82,21 +128,21 @@ class TestEventContactLink(TransactionCase):
             'name': 'Multi User',
             'email': 'multi@example.com',
         })
-        
+
         # Create second event
         event2 = self.env['event.event'].create({
             'name': 'Test Event 2',
             'date_begin': '2024-01-02 09:00:00',
             'date_end': '2024-01-02 17:00:00',
         })
-        
+
         # Create second registration with same email
         registration2 = self.env['event.registration'].create({
             'event_id': event2.id,
             'name': 'Multi User',
             'email': 'multi@example.com',
         })
-        
+
         # Check that both registrations are linked to the same contact
         self.assertEqual(registration1.contact_id, registration2.contact_id)
         self.assertEqual(len(registration1.contact_id.event_registration_ids), 2)
@@ -109,7 +155,7 @@ class TestEventContactLink(TransactionCase):
             'login': 'testuser@example.com',
             'email': 'testuser@example.com',
         })
-        
+
         # Create a registration with the user's email (but not directly linked)
         registration = self.env['event.registration'].create({
             'event_id': self.event.id,
@@ -117,12 +163,12 @@ class TestEventContactLink(TransactionCase):
             'email': 'testuser@example.com',
             'state': 'open',
         })
-        
+
         # Check enhanced participation detection
         self.assertTrue(self.event.is_user_registered_enhanced(user.id))
         self.assertTrue(self.event.is_participating_enhanced)
         self.assertEqual(self.event.registration_count_enhanced, 1)
-        
+
         # Get user registrations
         user_registrations = self.event.get_user_registrations_enhanced(user.id)
         self.assertEqual(len(user_registrations), 1)
@@ -136,7 +182,7 @@ class TestEventContactLink(TransactionCase):
             'login': 'testuser2@example.com',
             'email': 'testuser2@example.com',
         })
-        
+
         # Create a registration and link it to the user's contact
         registration = self.env['event.registration'].create({
             'event_id': self.event.id,
@@ -145,12 +191,12 @@ class TestEventContactLink(TransactionCase):
             'contact_id': user.partner_id.id,
             'state': 'open',
         })
-        
+
         # Check enhanced participation detection
         self.assertTrue(self.event.is_user_registered_enhanced(user.id))
         self.assertTrue(self.event.is_participating_enhanced)
         self.assertEqual(self.event.registration_count_enhanced, 1)
-        
+
         # Get user registrations
         user_registrations = self.event.get_user_registrations_enhanced(user.id)
         self.assertEqual(len(user_registrations), 1)
@@ -164,7 +210,7 @@ class TestEventContactLink(TransactionCase):
             'login': 'testuser3@example.com',
             'email': 'testuser3@example.com',
         })
-        
+
         # Create a registration with the user's email
         registration = self.env['event.registration'].create({
             'event_id': self.event.id,
@@ -172,10 +218,10 @@ class TestEventContactLink(TransactionCase):
             'email': 'testuser3@example.com',
             'state': 'open',
         })
-        
+
         # Check booking status
         self.assertTrue(registration._get_booking_status_for_user(user.id))
-        
+
         # Test with different user
         other_user = self.env['res.users'].create({
             'name': 'Other User',
@@ -183,3 +229,70 @@ class TestEventContactLink(TransactionCase):
             'email': 'other@example.com',
         })
         self.assertFalse(registration._get_booking_status_for_user(other_user.id))
+
+    def test_contact_finding_by_name_fallback(self):
+        """Test that contacts are found by name when email search fails"""
+        # Create first registration without email
+        registration1 = self.env['event.registration'].create({
+            'event_id': self.event.id,
+            'name': 'John Doe',
+            'state': 'open',
+        })
+
+        # Create second event
+        event2 = self.env['event.event'].create({
+            'name': 'Test Event 2',
+            'date_begin': '2024-01-02 09:00:00',
+            'date_end': '2024-01-02 17:00:00',
+        })
+
+        # Create second registration with same name but with email
+        registration2 = self.env['event.registration'].create({
+            'event_id': event2.id,
+            'name': 'John Doe',
+            'email': 'john.doe@example.com',
+            'phone': '+1234567890',
+            'state': 'open',
+        })
+
+        # Check that both registrations are linked to the same contact
+        self.assertEqual(registration1.contact_id, registration2.contact_id)
+
+        # Check that the contact has the email from the second registration
+        contact = registration1.contact_id
+        self.assertEqual(contact.email, 'john.doe@example.com')
+        self.assertEqual(contact.phone, '+1234567890')
+
+    def test_fix_duplicate_contacts(self):
+        """Test the fix_duplicate_contacts method"""
+        # Create a contact manually
+        contact = self.env['res.partner'].create({
+            'name': 'Jane Smith',
+            'email': 'jane.smith@example.com',
+            'is_company': False,
+        })
+
+        # Create registrations without contact_id but with same name
+        registration1 = self.env['event.registration'].create({
+            'event_id': self.event.id,
+            'name': 'Jane Smith',
+            'state': 'open',
+        })
+
+        registration2 = self.env['event.registration'].create({
+            'event_id': self.event.id,
+            'name': 'Jane Smith',
+            'email': 'jane.smith@example.com',
+            'state': 'open',
+        })
+
+        # Initially no contact linked
+        self.assertFalse(registration1.contact_id)
+        self.assertFalse(registration2.contact_id)
+
+        # Run fix_duplicate_contacts
+        self.env['event.registration'].fix_duplicate_contacts()
+
+        # Check that registrations are now linked to the existing contact
+        self.assertEqual(registration1.contact_id, contact)
+        self.assertEqual(registration2.contact_id, contact)

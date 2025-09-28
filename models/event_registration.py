@@ -106,7 +106,7 @@ class EventRegistration(models.Model):
         """Override write to automatically find or create contacts when email/name changes"""
         result = super().write(vals)
 
-        # Process records that have email or name changes but no contact_id
+        # Only process if contact_id is not already set or if it was cleared
         for record in self:
             if not record.contact_id and (record.email or record.name):
                 contact = record._find_or_create_contact({
@@ -121,7 +121,7 @@ class EventRegistration(models.Model):
         return result
 
     def _find_or_create_contact(self, vals):
-        """Find existing contact by email or create a new one"""
+        """Find existing contact by email or name, or create a new one"""
         email = vals.get('email')
         name = vals.get('name', '')
         phone = vals.get('phone', '')
@@ -130,30 +130,41 @@ class EventRegistration(models.Model):
         if not email and not name:
             return False
 
-        # Normalize email for searching
+        existing_contact = None
+
+        # First, try to find existing contact by normalized email
         if email:
             email_normalized = email_normalize(email)
             if email_normalized:
-                # First, try to find existing contact by normalized email
                 existing_contact = self.env['res.partner'].search([
                     ('email_normalized', '=', email_normalized),
                     ('is_company', '=', False)
                 ], limit=1)
 
-                if existing_contact:
-                    # Update existing contact with new information if provided
-                    update_vals = {}
-                    if name and name != existing_contact.name:
-                        update_vals['name'] = name
-                    if phone and phone != existing_contact.phone:
-                        update_vals['phone'] = phone
-                    if company_name and company_name != existing_contact.company_name:
-                        update_vals['company_name'] = company_name
+        # If no contact found by email and we have a name, try to find by name
+        if not existing_contact and name:
+            # Search for contacts with the same name (case-insensitive)
+            existing_contact = self.env['res.partner'].search([
+                ('name', '=ilike', name),
+                ('is_company', '=', False)
+            ], limit=1)
 
-                    if update_vals:
-                        existing_contact.write(update_vals)
+        # If we found an existing contact, update it with new information
+        if existing_contact:
+            update_vals = {}
+            if email and email != existing_contact.email:
+                update_vals['email'] = email
+            if name and name != existing_contact.name:
+                update_vals['name'] = name
+            if phone and phone != existing_contact.phone:
+                update_vals['phone'] = phone
+            if company_name and company_name != existing_contact.company_name:
+                update_vals['company_name'] = company_name
 
-                    return existing_contact
+            if update_vals:
+                existing_contact.write(update_vals)
+
+            return existing_contact
 
         # If no existing contact found, create a new one
         create_vals = {
@@ -185,18 +196,13 @@ class EventRegistration(models.Model):
 
     @api.onchange('email', 'name', 'phone', 'company_name')
     def _onchange_contact_fields(self):
-        """Try to find existing contact when registration fields change"""
+        """Clear contact_id when fields change to allow re-evaluation on save"""
+        # Clear contact_id when fields change so it gets re-evaluated on save
+        if not self.contact_id:
+            return
+        # Only clear if the fields that matter for contact matching have changed
         if self.email or self.name:
-            # Only search if we don't already have a contact_id
-            if not self.contact_id:
-                contact = self._find_or_create_contact({
-                    'email': self.email,
-                    'name': self.name,
-                    'phone': self.phone,
-                    'company_name': self.company_name,
-                })
-                if contact:
-                    self.contact_id = contact
+            self.contact_id = False
 
     def _get_booking_status_for_user(self, user_id=None):
         """Get booking status for a specific user based on contact linking"""
@@ -220,3 +226,91 @@ class EventRegistration(models.Model):
             return True
 
         return False
+
+    def action_link_to_existing_contact(self):
+        """Action to manually link registration to an existing contact"""
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Link to Existing Contact',
+            'res_model': 'res.partner',
+            'view_mode': 'tree,form',
+            'target': 'new',
+            'context': {
+                'default_is_company': False,
+                'link_registration_id': self.id,
+            },
+            'domain': [('is_company', '=', False)],
+        }
+
+    def action_find_or_create_contact(self):
+        """Manually trigger contact finding/creation based on current field values"""
+        if self.email or self.name:
+            contact = self._find_or_create_contact({
+                'email': self.email,
+                'name': self.name,
+                'phone': self.phone,
+                'company_name': self.company_name,
+            })
+            if contact:
+                self.contact_id = contact.id
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': 'Contact Linked',
+                        'message': f'Registration linked to contact: {contact.name}',
+                        'type': 'success',
+                    }
+                }
+            else:
+                return {
+                    'type': 'ir.actions.client',
+                    'tag': 'display_notification',
+                    'params': {
+                        'title': 'No Contact Found',
+                        'message': 'No matching contact found. Please check the name and email.',
+                        'type': 'warning',
+                    }
+                }
+        else:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Missing Information',
+                    'message': 'Please provide a name or email to find/create a contact.',
+                    'type': 'warning',
+                }
+            }
+
+    @api.model
+    def fix_duplicate_contacts(self):
+        """Method to fix duplicate contacts and link registrations properly"""
+        # Find registrations without contact_id but with name
+        registrations_without_contact = self.search([
+            ('contact_id', '=', False),
+            ('name', '!=', False)
+        ])
+
+        for registration in registrations_without_contact:
+            # Try to find existing contact by name
+            existing_contact = self.env['res.partner'].search([
+                ('name', '=ilike', registration.name),
+                ('is_company', '=', False)
+            ], limit=1)
+
+            if existing_contact:
+                # Link registration to existing contact
+                registration.contact_id = existing_contact.id
+
+                # Update contact with registration information if missing
+                update_vals = {}
+                if registration.email and not existing_contact.email:
+                    update_vals['email'] = registration.email
+                if registration.phone and not existing_contact.phone:
+                    update_vals['phone'] = registration.phone
+                if registration.company_name and not existing_contact.company_name:
+                    update_vals['company_name'] = registration.company_name
+
+                if update_vals:
+                    existing_contact.write(update_vals)
