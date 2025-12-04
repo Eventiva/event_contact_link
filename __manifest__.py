@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Event Contact Link',
-    'version': '18.0.1.0.0',
+    'version': '1.2.0',
     'category': 'Events',
     'summary': 'Link event registrations to contacts with automatic contact creation',
     'description': """
