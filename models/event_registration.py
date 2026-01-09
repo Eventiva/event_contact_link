@@ -154,7 +154,9 @@ class EventRegistration(models.Model):
             update_vals = {}
             if email and email != existing_contact.email:
                 update_vals['email'] = email
-            if name and name != existing_contact.name:
+            # Skip name update if it's an auto-generated guest name (contains "Guest")
+            # This prevents auto-generated guest registration names from overwriting the contact name
+            if name and name != existing_contact.name and ' Guest ' not in name:
                 update_vals['name'] = name
             if phone and phone != existing_contact.phone:
                 update_vals['phone'] = phone
