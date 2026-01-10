@@ -15,6 +15,11 @@ class EventEvent(models.Model):
         search="_search_is_participating_enhanced",
         help="Enhanced participation detection that includes contact-linked registrations"
     )
+    registration_count_enhanced = fields.Integer(
+        "Registration Count (Enhanced)",
+        compute="_compute_registration_count_enhanced",
+        help="Enhanced registration count that includes contact-linked registrations"
+    )
 
     @api.depends('registration_ids', 'registration_ids.contact_id')
     @api.depends_context('uid')
@@ -97,3 +102,14 @@ class EventEvent(models.Model):
             user_id = self.env.user.id
 
         return len(self.get_user_registrations_enhanced(user_id)) > 0
+
+    @api.depends('registration_ids', 'registration_ids.contact_id', 'registration_ids.state')
+    @api.depends_context('uid')
+    def _compute_registration_count_enhanced(self):
+        """Compute enhanced registration count for current user"""
+        for event in self:
+            if self.env.user._is_public():
+                event.registration_count_enhanced = 0
+            else:
+                registrations = event.get_user_registrations_enhanced()
+                event.registration_count_enhanced = len(registrations)

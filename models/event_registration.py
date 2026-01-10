@@ -94,8 +94,9 @@ class EventRegistration(models.Model):
     def create(self, vals_list):
         """Override create to automatically find or create contacts"""
         for vals in vals_list:
-            # Only process if we have the necessary information and no contact_id is provided
-            if not vals.get('contact_id') and (vals.get('email') or vals.get('name')):
+            # Only process if we have email (not just name) and no contact_id is provided
+            # This prevents auto-creating contacts for registrations with only a name
+            if not vals.get('contact_id') and vals.get('email'):
                 contact = self._find_or_create_contact(vals)
                 if contact:
                     vals['contact_id'] = contact.id
@@ -104,11 +105,19 @@ class EventRegistration(models.Model):
 
     def write(self, vals):
         """Override write to automatically find or create contacts when email/name changes"""
+        # Clear contact_id if email or name is being changed (to allow re-evaluation)
+        # We need to clear it per-record, so we'll do it after super().write()
         result = super().write(vals)
 
-        # Only process if contact_id is not already set or if it was cleared
+        # Clear contact_id for records where email or name was changed
+        if 'email' in vals or 'name' in vals:
+            for record in self:
+                if record.contact_id:
+                    record.contact_id = False
+
+        # Only process if contact_id is not already set and we have email (not just name)
         for record in self:
-            if not record.contact_id and (record.email or record.name):
+            if not record.contact_id and record.email:
                 contact = record._find_or_create_contact({
                     'email': record.email,
                     'name': record.name,
@@ -199,11 +208,9 @@ class EventRegistration(models.Model):
     @api.onchange('email', 'name', 'phone', 'company_name')
     def _onchange_contact_fields(self):
         """Clear contact_id when fields change to allow re-evaluation on save"""
-        # Clear contact_id when fields change so it gets re-evaluated on save
-        if not self.contact_id:
-            return
-        # Only clear if the fields that matter for contact matching have changed
-        if self.email or self.name:
+        # Clear contact_id when email or name fields change so it gets re-evaluated on save
+        # This ensures that when email/name changes, the contact is re-evaluated
+        if self.contact_id:
             self.contact_id = False
 
     def _get_booking_status_for_user(self, user_id=None):
