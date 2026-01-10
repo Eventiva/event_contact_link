@@ -197,11 +197,12 @@ class EventRegistration(models.Model):
             self.company_name = self.contact_id.company_name
             self.partner_id = self.contact_id
 
-    @api.onchange('email', 'name', 'phone', 'company_name')
+    @api.onchange('email', 'name')
     def _onchange_contact_fields(self):
-        """Clear contact_id when fields change to allow re-evaluation on save"""
-        # Clear contact_id when email or name fields change so it gets re-evaluated on save
-        self.contact_id = False
+        """Clear contact_id when email changes to allow re-evaluation on save"""
+        # Clear contact_id only when email changes (core functionality)
+        if self._origin and self._origin.email != self.email:
+            self.contact_id = False
 
     def _get_booking_status_for_user(self, user_id=None):
         """Get booking status for a specific user based on contact linking"""

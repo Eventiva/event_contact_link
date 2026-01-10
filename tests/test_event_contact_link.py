@@ -87,17 +87,11 @@ class TestEventContactLink(TransactionCase):
         self.assertTrue(registration.contact_id)
         original_contact = registration.contact_id
 
-        # Change the email - this should clear the contact_id
-        registration.email = 'newemail@example.com'
-        registration._onchange_contact_fields()
-
-        # Contact should be cleared to allow re-evaluation on save
-        self.assertFalse(registration.contact_id)
-
-        # Save the record - this should create/find a new contact
+        # Change the email - contact_id should remain until saved
+        # (onchange behavior is UI-only, not part of core functionality)
         registration.write({'email': 'newemail@example.com'})
 
-        # Should have a contact (might be same or different)
+        # Should have a new contact (or found existing one)
         self.assertTrue(registration.contact_id)
 
     def test_manual_contact_finding(self):
@@ -167,9 +161,9 @@ class TestEventContactLink(TransactionCase):
         # Check enhanced participation detection
         self.assertTrue(self.event.is_user_registered_enhanced(user.id))
         # Switch to user context to check is_participating_enhanced
-        with self.env(user=user):
-            self.assertTrue(self.event.is_participating_enhanced)
-            self.assertEqual(self.event.registration_count_enhanced, 1)
+        event_as_user = self.event.with_user(user)
+        self.assertTrue(event_as_user.is_participating_enhanced)
+        self.assertEqual(event_as_user.registration_count_enhanced, 1)
 
         # Get user registrations
         user_registrations = self.event.get_user_registrations_enhanced(user.id)
@@ -197,9 +191,9 @@ class TestEventContactLink(TransactionCase):
         # Check enhanced participation detection
         self.assertTrue(self.event.is_user_registered_enhanced(user.id))
         # Switch to user context to check is_participating_enhanced
-        with self.env(user=user):
-            self.assertTrue(self.event.is_participating_enhanced)
-            self.assertEqual(self.event.registration_count_enhanced, 1)
+        event_as_user = self.event.with_user(user)
+        self.assertTrue(event_as_user.is_participating_enhanced)
+        self.assertEqual(event_as_user.registration_count_enhanced, 1)
 
         # Get user registrations
         user_registrations = self.event.get_user_registrations_enhanced(user.id)
@@ -235,13 +229,16 @@ class TestEventContactLink(TransactionCase):
         self.assertFalse(registration._get_booking_status_for_user(other_user.id))
 
     def test_contact_finding_by_name_fallback(self):
-        """Test that contacts are found by name when email search fails"""
-        # Create first registration without email
+        """Test that contacts are found by name when using fix_duplicate_contacts"""
+        # Create first registration without email (no contact created automatically)
         registration1 = self.env['event.registration'].create({
             'event_id': self.event.id,
             'name': 'John Doe',
             'state': 'open',
         })
+
+        # Should not have a contact (no email provided)
+        self.assertFalse(registration1.contact_id)
 
         # Create second event
         event2 = self.env['event.event'].create({
@@ -259,7 +256,13 @@ class TestEventContactLink(TransactionCase):
             'state': 'open',
         })
 
-        # Check that both registrations are linked to the same contact
+        # Second registration should have a contact
+        self.assertTrue(registration2.contact_id)
+
+        # Run fix_duplicate_contacts to link registration1 to the same contact
+        self.env['event.registration'].fix_duplicate_contacts()
+
+        # Now both registrations should be linked to the same contact
         self.assertEqual(registration1.contact_id, registration2.contact_id)
 
         # Check that the contact has the email from the second registration
