@@ -94,9 +94,8 @@ class EventRegistration(models.Model):
     def create(self, vals_list):
         """Override create to automatically find or create contacts"""
         for vals in vals_list:
-            # Only process if we have email (not just name) and no contact_id is provided
-            # This prevents auto-creating contacts for registrations with only a name
-            if not vals.get('contact_id') and vals.get('email'):
+            # Process if we have email or name and no contact_id is provided
+            if not vals.get('contact_id') and (vals.get('email') or vals.get('name')):
                 contact = self._find_or_create_contact(vals)
                 if contact:
                     vals['contact_id'] = contact.id
@@ -115,9 +114,9 @@ class EventRegistration(models.Model):
                 if record.contact_id:
                     record.contact_id = False
 
-        # Only process if contact_id is not already set and we have email (not just name)
+        # Only process if contact_id is not already set and we have email or name
         for record in self:
-            if not record.contact_id and record.email:
+            if not record.contact_id and (record.email or record.name):
                 contact = record._find_or_create_contact({
                     'email': record.email,
                     'name': record.name,
@@ -210,8 +209,7 @@ class EventRegistration(models.Model):
         """Clear contact_id when fields change to allow re-evaluation on save"""
         # Clear contact_id when email or name fields change so it gets re-evaluated on save
         # This ensures that when email/name changes, the contact is re-evaluated
-        if self.contact_id:
-            self.contact_id = False
+        self.contact_id = False
 
     def _get_booking_status_for_user(self, user_id=None):
         """Get booking status for a specific user based on contact linking"""

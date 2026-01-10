@@ -59,15 +59,32 @@ class EventEvent(models.Model):
 
         # Enhanced domain that includes contact-linked registrations
         if partner_id:
+            # Build OR conditions for matching registrations
+            or_conditions = []
+
+            # Add visitor_id condition if we have a visitor
+            if current_visitor:
+                or_conditions.append(('visitor_id', '=', current_visitor.id))
+
             # Original logic: direct partner_id match
-            visitor_domain = expression.OR([visitor_domain, [('partner_id', '=', partner_id.id)]])
+            or_conditions.append(('partner_id', '=', partner_id.id))
 
             # Enhanced logic: contact_id match
-            visitor_domain = expression.OR([visitor_domain, [('contact_id', '=', partner_id.id)]])
+            or_conditions.append(('contact_id', '=', partner_id.id))
 
             # Enhanced logic: email match (for manually added registrations)
             if partner_id.email:
-                visitor_domain = expression.OR([visitor_domain, [('email', '=ilike', partner_id.email)]])
+                or_conditions.append(('email', '=ilike', partner_id.email))
+
+            # Build the OR domain: ['|', cond1, '|', cond2, cond3, ...]
+            if len(or_conditions) > 1:
+                visitor_domain = []
+                for i, condition in enumerate(or_conditions):
+                    if i < len(or_conditions) - 1:
+                        visitor_domain.append('|')
+                    visitor_domain.append(condition)
+            elif len(or_conditions) == 1:
+                visitor_domain = or_conditions
 
         registrations_events = self.env['event.registration'].sudo()._read_group(
             expression.AND([visitor_domain, base_domain]),
@@ -81,18 +98,34 @@ class EventEvent(models.Model):
             user_id = self.env.user.id
 
         user = self.env['res.users'].browse(user_id)
-        if not user.exists():
+        if not user.exists() or not user.partner_id:
             return self.env['event.registration']
+
+        # Build OR conditions for matching registrations
+        or_conditions = [
+            ('partner_id', '=', user.partner_id.id),  # Direct partner match
+            ('contact_id', '=', user.partner_id.id),  # Contact-linked match
+        ]
+
+        # Add email match if user has an email
+        if user.email:
+            # Use case-insensitive email match
+            or_conditions.append(('email', '=ilike', user.email))
 
         domain = [
             ('event_id', 'in', self.ids),
             ('state', 'in', ['open', 'done']),
-            '|',  # OR conditions
-            ('partner_id', '=', user.partner_id.id),  # Direct partner match
-            '|',  # OR conditions
-            ('contact_id', '=', user.partner_id.id),  # Contact-linked match
-            ('email', '=ilike', user.email)  # Email match
         ]
+
+        # Add OR conditions - Odoo domain format: ['|', cond1, '|', cond2, cond3]
+        if len(or_conditions) > 1:
+            # Build the OR chain: '|', cond1, '|', cond2, cond3, ...
+            for i, condition in enumerate(or_conditions):
+                if i < len(or_conditions) - 1:
+                    domain.append('|')
+                domain.append(condition)
+        elif len(or_conditions) == 1:
+            domain.append(or_conditions[0])
 
         return self.env['event.registration'].search(domain)
 
