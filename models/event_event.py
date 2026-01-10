@@ -2,7 +2,7 @@
 
 from odoo import api, fields, models
 from odoo.exceptions import UserError
-from odoo.osv import expression
+from odoo.fields import Domain
 
 
 class EventEvent(models.Model):
@@ -49,7 +49,7 @@ class EventEvent(models.Model):
 
         base_domain = [('state', 'in', ['open', 'done'])]
         if self:
-            base_domain = expression.AND([[('event_id', 'in', self.ids)], base_domain])
+            base_domain = Domain.AND([[('event_id', 'in', self.ids)], base_domain])
 
         visitor_domain = []
         partner_id = self.env.user.partner_id
@@ -87,7 +87,7 @@ class EventEvent(models.Model):
                 visitor_domain = or_conditions
 
         registrations_events = self.env['event.registration'].sudo()._read_group(
-            expression.AND([visitor_domain, base_domain]),
+            Domain.AND([visitor_domain, base_domain]),
             ['event_id'], ['__count'])
         return self.env['event.event'].browse([event.id for event, _reg_count in registrations_events])
 
