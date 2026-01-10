@@ -137,7 +137,7 @@ class EventRegistration(models.Model):
         if email:
             email_normalized = email_normalize(email)
             if email_normalized:
-                existing_contact = self.env['res.partner'].search([
+                existing_contact = self.env['res.partner'].sudo().search([
                     ('email_normalized', '=', email_normalized),
                     ('is_company', '=', False)
                 ], limit=1)
@@ -145,7 +145,7 @@ class EventRegistration(models.Model):
         # If no contact found by email and we have a name, try to find by name
         if not existing_contact and name:
             # Search for contacts with the same name (case-insensitive)
-            existing_contact = self.env['res.partner'].search([
+            existing_contact = self.env['res.partner'].sudo().search([
                 ('name', '=ilike', name),
                 ('is_company', '=', False)
             ], limit=1)
@@ -165,11 +165,12 @@ class EventRegistration(models.Model):
                 update_vals['company_name'] = company_name
 
             if update_vals:
-                existing_contact.write(update_vals)
+                existing_contact.sudo().write(update_vals)
 
             return existing_contact
 
-        # If no existing contact found, create a new one
+        # If no existing contact found, create a new one with sudo() to bypass permission checks
+        # This is necessary because contact creation is an automatic background operation
         create_vals = {
             'is_company': False,
         }
@@ -185,7 +186,7 @@ class EventRegistration(models.Model):
         if company_name:
             create_vals['company_name'] = company_name
 
-        return self.env['res.partner'].create(create_vals)
+        return self.env['res.partner'].sudo().create(create_vals)
 
     @api.onchange('contact_id')
     def _onchange_contact_id(self):

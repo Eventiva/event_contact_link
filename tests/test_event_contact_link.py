@@ -293,13 +293,14 @@ class TestEventContactLink(TransactionCase):
             'state': 'open',
         })
 
-        # Initially no contact linked
+        # registration1 has no contact (no email provided)
         self.assertFalse(registration1.contact_id)
-        self.assertFalse(registration2.contact_id)
+        # registration2 should be linked to existing contact (email match)
+        self.assertEqual(registration2.contact_id, contact)
 
-        # Run fix_duplicate_contacts
+        # Run fix_duplicate_contacts to link registration1 by name
         self.env['event.registration'].fix_duplicate_contacts()
 
-        # Check that registrations are now linked to the existing contact
+        # Check that both registrations are now linked to the existing contact
         self.assertEqual(registration1.contact_id, contact)
         self.assertEqual(registration2.contact_id, contact)
