@@ -21,13 +21,17 @@ class EventEvent(models.Model):
         help="Enhanced registration count that includes contact-linked registrations"
     )
 
-    @api.depends('registration_ids', 'registration_ids.contact_id')
+    @api.depends('registration_ids', 'registration_ids.contact_id', 'registration_ids.email')
     @api.depends_context('uid')
     def _compute_is_participating_enhanced(self):
         """Enhanced participation detection that includes contact-linked registrations"""
+        # Initialize all to False
+        self.is_participating_enhanced = False
+
+        # Get participating events for current user
         participating_events = self._fetch_is_participating_events_enhanced()
-        participating_events.is_participating_enhanced = True
-        (self - participating_events).is_participating_enhanced = False
+        if participating_events:
+            participating_events.is_participating_enhanced = True
 
     @api.model
     def _search_is_participating_enhanced(self, operator, value):
@@ -40,7 +44,6 @@ class EventEvent(models.Model):
 
         return [('id', 'in' if check_is_participating else 'not in', self._fetch_is_participating_events_enhanced().ids)]
 
-    @api.model
     def _fetch_is_participating_events_enhanced(self):
         """Enhanced version that includes contact-linked registrations"""
         current_visitor = self.env['website.visitor']._get_visitor_from_request()

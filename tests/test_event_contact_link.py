@@ -166,8 +166,10 @@ class TestEventContactLink(TransactionCase):
 
         # Check enhanced participation detection
         self.assertTrue(self.event.is_user_registered_enhanced(user.id))
-        self.assertTrue(self.event.is_participating_enhanced)
-        self.assertEqual(self.event.registration_count_enhanced, 1)
+        # Switch to user context to check is_participating_enhanced
+        with self.env(user=user):
+            self.assertTrue(self.event.is_participating_enhanced)
+            self.assertEqual(self.event.registration_count_enhanced, 1)
 
         # Get user registrations
         user_registrations = self.event.get_user_registrations_enhanced(user.id)
@@ -194,8 +196,10 @@ class TestEventContactLink(TransactionCase):
 
         # Check enhanced participation detection
         self.assertTrue(self.event.is_user_registered_enhanced(user.id))
-        self.assertTrue(self.event.is_participating_enhanced)
-        self.assertEqual(self.event.registration_count_enhanced, 1)
+        # Switch to user context to check is_participating_enhanced
+        with self.env(user=user):
+            self.assertTrue(self.event.is_participating_enhanced)
+            self.assertEqual(self.event.registration_count_enhanced, 1)
 
         # Get user registrations
         user_registrations = self.event.get_user_registrations_enhanced(user.id)
