@@ -11,5 +11,4 @@ class ResPartner(models.Model):
         'contact_id',
         string='Event Registrations',
         help='Event registrations linked to this contact',
-        blacklist=False
     )
