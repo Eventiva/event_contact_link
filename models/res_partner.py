@@ -9,6 +9,6 @@ class ResPartner(models.Model):
     event_registration_ids = fields.One2many(
         'event.registration',
         'contact_id',
-        string='Event Registrations',
+        string='Linked Event Registrations',
         help='Event registrations linked to this contact',
     )
